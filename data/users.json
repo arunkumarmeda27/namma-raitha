@@ -1,0 +1,103 @@
+{
+  "users": [
+    {
+      "id": "NR-KA-717115",
+      "phone": "9686097551",
+      "passwordHash": "$2b$12$n70ssWWHW5d.68ZYfMoDHedMMO2ldb3pluFgSonqrkS0KIg/iyTC6",
+      "role": "farmer",
+      "name": "Suresh Nagaraj",
+      "district": "Kodagu",
+      "aadhaarMasked": "XXXX-XXXX-6712",
+      "digilockerData": {
+        "name": "Suresh Nagaraj",
+        "district": "Kodagu",
+        "village": "Madikeri",
+        "land": "4.0 acres",
+        "dob": "1990-03-08",
+        "aadhaarMasked": "XXXX-XXXX-6712",
+        "verifiedAt": "2026-03-28T17:58:20.230Z"
+      },
+      "verified": true,
+      "rating": 0,
+      "deals": 0,
+      "badge": "Silver Farmer",
+      "createdAt": "2026-03-28T17:58:37.115Z"
+    },
+    {
+      "id": "NR-KA-925168",
+      "phone": "1234567890",
+      "passwordHash": "$2b$12$U4H0b09WipCA.zopVjxZmOrfQX6EVJpMqDtAjZbwwkSRZI8/Cgoka",
+      "role": "farmer",
+      "name": "Nagaraj Reddy",
+      "district": "Shivamogga",
+      "aadhaarMasked": "XXXX-XXXX-1234",
+      "digilockerData": {
+        "name": "Nagaraj Reddy",
+        "district": "Shivamogga",
+        "village": "Bhadravathi",
+        "land": "5.0 acres",
+        "dob": "1975-12-01",
+        "aadhaarMasked": "XXXX-XXXX-1234",
+        "verifiedAt": "2026-03-28T18:18:07.597Z"
+      },
+      "verified": true,
+      "rating": 0,
+      "deals": 0,
+      "badge": "Silver Farmer",
+      "createdAt": "2026-03-28T18:18:45.168Z"
+    },
+    {
+      "id": "NR-BUY-154787",
+      "phone": "0000000000",
+      "passwordHash": "$2b$12$z.r0erOaPfCmsefVeEvqTe3KiD9VvnhL4/WLncHLxSkAf0fpej35G",
+      "role": "buyer",
+      "name": "Fresh Harvest Hub",
+      "district": "Mangaluru",
+      "aadhaarMasked": "XXXX-XXXX-3333",
+      "digilockerData": {
+        "name": "Fresh Harvest Hub",
+        "business": "Retail Distribution",
+        "gst": "29QRSTU3456I1Z4",
+        "city": "Mangaluru",
+        "aadhaarMasked": "XXXX-XXXX-3333",
+        "verifiedAt": "2026-03-28T18:22:23.269Z"
+      },
+      "verified": true,
+      "rating": 0,
+      "deals": 0,
+      "badge": "Verified Buyer",
+      "createdAt": "2026-03-28T18:22:34.787Z"
+    },
+    {
+      "id": "NR-KA-425944",
+      "phone": "9000000001",
+      "passwordHash": "$2b$12$kkjkAcvPWsEnXtNeLV60suL5haTB1o1F4dhCRCp/xr9mwMsJx00AC",
+      "role": "farmer",
+      "name": "Suresh Nagaraj",
+      "district": "Kodagu",
+      "aadhaarMasked": "XXXX-XXXX-9012",
+      "digilockerData": {
+        "name": "Suresh Nagaraj",
+        "district": "Kodagu",
+        "village": "Madikeri",
+        "land": "4.0 acres",
+        "dob": "1990-03-08",
+        "aadhaarMasked": "XXXX-XXXX-9012",
+        "verifiedAt": "2026-03-28T18:26:40.885Z"
+      },
+      "verified": true,
+      "rating": 0,
+      "deals": 0,
+      "badge": "Silver Farmer",
+      "createdAt": "2026-03-28T18:27:05.944Z"
+    }
+  ],
+  "otps": {
+    "9876543210": {
+      "otp": "194585",
+      "aadhaar": "123456789012",
+      "role": "farmer",
+      "expires": 1774720463748
+    }
+  }
+}
