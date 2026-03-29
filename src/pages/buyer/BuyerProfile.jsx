@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function BuyerProfile({ user, onLogout }) {
+export default function BuyerProfile({ user, onLogout, onNav }) {
   return (
     <>
       <div className="prof-header" style={{ background: 'linear-gradient(135deg,var(--blue-d),#0D47A1)' }}>
@@ -16,14 +16,14 @@ export default function BuyerProfile({ user, onLogout }) {
       </div>
 
       {/* DigiLocker Business Info */}
-      {user.digilockerData?.gst && (
+      {user.digilockerData?.gstn && (
         <div className="card" style={{ borderLeft: '4px solid var(--blue)' }}>
           <div style={{ fontWeight: 700, fontSize: '.86rem', marginBottom: '10px' }}>🔵 DigiLocker Verified Business Details</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             {[
               { label: 'Business Name', val: user.digilockerData.business },
               { label: 'City', val: user.digilockerData.city },
-              { label: 'GST Number', val: user.digilockerData.gst },
+              { label: 'GST Number', val: user.digilockerData.gstn },
               { label: 'Aadhaar', val: user.digilockerData.aadhaarMasked },
             ].map(i => (
               <div key={i.label} style={{ background: 'var(--bg)', borderRadius: '9px', padding: '10px' }}>
@@ -36,13 +36,13 @@ export default function BuyerProfile({ user, onLogout }) {
       )}
 
       {[
-        { icon: '🏦', label: 'Payment Account', sub: 'HDFC ××××8821 — GST Linked', right: '›' },
-        { icon: '📦', label: 'My Orders · ನನ್ನ ಆದೇಶ', sub: '142 total · 3 active', right: '›' },
-        { icon: '💬', label: 'Message Farmers · ರೈತರೊಂದಿಗೆ ಮಾತನಾಡಿ', sub: 'Direct connect to sellers', right: '›' },
-        { icon: '📊', label: 'Procurement Reports', sub: 'Monthly analytics & invoices', right: '›' },
-        { icon: '🆘', label: 'Help & Support', sub: '1800-180-1551', right: '›' },
+        { icon: '🏦', label: 'Payment Account', sub: 'HDFC ××××8821 — GST Linked', right: '›', onClick: () => onNav && onNav('bank') },
+        { icon: '📦', label: 'My Orders · ನನ್ನ ಆದೇಶ', sub: '142 total · 3 active', right: '›', onClick: () => onNav && onNav('orders') },
+        { icon: '💬', label: 'Message Farmers · ರೈತರೊಂದಿಗೆ ಮಾತನಾಡಿ', sub: 'Direct connect to sellers', right: '›', onClick: () => onNav && onNav('messages') },
+        { icon: '📊', label: 'Procurement Reports', sub: 'Monthly analytics & invoices', right: '›', onClick: () => onNav && onNav('reports') },
+        { icon: '🆘', label: 'Help & Support', sub: '1800-180-1551', right: '›', onClick: () => onNav && onNav('support') },
       ].map((item, i) => (
-        <div className="pm-item" key={i}>
+        <div className="pm-item" key={i} onClick={item.onClick}>
           <span className="pm-icon">{item.icon}</span>
           <div style={{ flex: 1 }}>
             <div className="pm-label">{item.label}</div>

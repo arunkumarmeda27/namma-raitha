@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Ticker from '../components/Ticker';
+import Notifications from '../components/Notifications';
 import BuyerHome from './buyer/BuyerHome';
 import BuyerBrowse from './buyer/BuyerBrowse';
 import BuyerOrders from './buyer/BuyerOrders';
@@ -25,7 +26,43 @@ export default function BuyerApp({ user, onLogout }) {
     home: <BuyerHome user={user} onNav={setPage} />,
     browse: <BuyerBrowse />,
     orders: <BuyerOrders />,
-    profile: <BuyerProfile user={user} onLogout={onLogout} />,
+    profile: <BuyerProfile user={user} onLogout={onLogout} onNav={setPage} />,
+    bank: (
+      <div className="card" style={{ margin: '20px' }}>
+        <h3 style={{ marginBottom: '15px' }}>🏦 Payment Details</h3>
+        <div style={{ padding: '20px', background: 'var(--bg)', borderRadius: '10px' }}>
+          <p style={{ marginBottom: '8px' }}><strong>Bank:</strong> HDFC Bank</p>
+          <p style={{ marginBottom: '8px' }}><strong>Account:</strong> ×××× 8821</p>
+          <p style={{ marginBottom: '8px' }}><strong>IFSC:</strong> HDFC000XXXX</p>
+          <p style={{ color: 'var(--blue-d)', fontWeight: 'bold', marginTop: '15px' }}>✓ Associated with GSTN {user?.digilockerData?.gstn || 'Linked'}</p>
+        </div>
+        <button className="auth-submit-btn" style={{ marginTop: '20px', background: 'var(--blue)' }} onClick={() => setPage('profile')}>Back to Profile</button>
+      </div>
+    ),
+    messages: (
+      <div className="card" style={{ margin: '20px', textAlign: 'center', padding: '40px 20px' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '15px' }}>💬</div>
+        <h3>Secure Messages</h3>
+        <p style={{ color: 'var(--light)', margin: '15px 0' }}>End-to-end encrypted messaging with farmers will be available soon.</p>
+        <button className="auth-submit-btn" style={{ marginTop: '20px', background: 'var(--blue)' }} onClick={() => setPage('profile')}>Back to Profile</button>
+      </div>
+    ),
+    reports: (
+      <div className="card" style={{ margin: '20px', textAlign: 'center', padding: '40px 20px' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '15px' }}>📊</div>
+        <h3>Procurement Intelligence</h3>
+        <p style={{ color: 'var(--light)', margin: '15px 0' }}>Monthly analytics, invoices, and market forecasting models are currently generating.</p>
+        <button className="auth-submit-btn" style={{ marginTop: '20px', background: 'var(--blue)' }} onClick={() => setPage('profile')}>Back to Profile</button>
+      </div>
+    ),
+    support: (
+      <div className="card" style={{ margin: '20px', textAlign: 'center', padding: '40px 20px' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '15px' }}>🆘</div>
+        <h3>Kisan Helpline</h3>
+        <p style={{ color: 'var(--light)', margin: '15px 0' }}>Call <strong>1800-180-1551</strong> for instant support between 9AM and 6PM.</p>
+        <button className="auth-submit-btn" style={{ marginTop: '20px', background: 'var(--blue)' }} onClick={() => setPage('profile')}>Back to Profile</button>
+      </div>
+    ),
   };
 
   const navItems = [
@@ -50,7 +87,7 @@ export default function BuyerApp({ user, onLogout }) {
           </div>
           <div className="tb-actions">
             {!isDesktop && <button className="tb-btn" onClick={() => setPage('profile')}>👤</button>}
-            <button className="tb-btn" title="Notifications">🔔</button>
+            <Notifications token={localStorage.getItem('nr_token')} />
             {isDesktop && (
               <div style={{ background: 'rgba(255,255,255,.15)', padding: '5px 12px', borderRadius: '10px', fontSize: '.75rem', color: '#fff', fontWeight: 600 }}>
                 🏪 {user.name}
