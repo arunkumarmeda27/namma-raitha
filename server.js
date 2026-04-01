@@ -1899,11 +1899,13 @@ app.post('/api/user/update-profile', authMiddleware, async (req, res) => {
 // Serve React build files
 app.use(express.static(join(__dirname, 'dist')));
 
-// Catch-all route for SPA routing
-app.get(/.*/, (req, res, next) => {
-  // If it looks like an API call, skip static serving
-  if (req.path.startsWith('/api')) return next();
-  res.sendFile(join(__dirname, 'dist', 'index.html'));
+// Catch-all route for SPA routing - Manual middleware bypasses path-to-regexp issues in Express 5
+app.use((req, res, next) => {
+  // Only handle GET requests that aren't API calls
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    return res.sendFile(join(__dirname, 'dist', 'index.html'));
+  }
+  next();
 });
 
 app.listen(PORT, () => {
