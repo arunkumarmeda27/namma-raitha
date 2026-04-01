@@ -304,7 +304,7 @@ async function fetchWithRetry(url, options, maxRetries = 2) {
     if (res.status !== 429) return res;
     if (attempt < maxRetries) {
       const waitMs = Math.pow(2, attempt) * 2000; // 2s, 4s
-      console.log(`⏳ Gemini rate limited (429). Retrying in ${waitMs/1000}s...`);
+      console.log(`⏳ Gemini rate limited (429). Retrying in ${waitMs / 1000}s...`);
       await new Promise(r => setTimeout(r, waitMs));
     } else {
       console.log('❌ Gemini 429 exhausted retries — using fallback');
@@ -1258,7 +1258,7 @@ function mockMarketInsight(cropName) {
     'Paddy': { trend: 'Stable', forecast: '+2%', sellAdvice: 'Sell now — government MSP ₹2,183 ongoing.', bestMarket: 'Mandya APMC · Davangere Mandi', avgPrice: '₹2,200/qt', weekHigh: '₹2,350/qt', weekLow: '₹2,100/qt' },
     'Cotton': { trend: 'Falling', forecast: '-4%', sellAdvice: 'Sell immediately — international prices declining.', bestMarket: 'Davanagere APMC · Harihara Market', avgPrice: '₹7,200/qt', weekHigh: '₹7,500/qt', weekLow: '₹6,900/qt' },
   };
-  return { crop: cropName, ...(insights[cropName] || { trend: 'Stable', forecast: '+3%', sellAdvice: `${cropName} prices are stable.`, bestMarket: 'Nearest APMC', avgPrice: '₹2,500/qt', weekHigh: '₹2,800/qt', weekLow: '₹2,300/qt' }), demandScore: Math.floor(65 + Math.random() * 30), buyerCount: Math.floor(8 + Math.random() * 20), priceHistory: [2800, 2900, 2750, 3000, 3200, 3100, 3400, 3600, 3500, 3800, 3900, 4000].map((v, i) => ({ month: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i], price: v })), tip: 'Best time: Early morning APMC auctions. Quality certification gives +5% premium.' };
+  return { crop: cropName, ...(insights[cropName] || { trend: 'Stable', forecast: '+3%', sellAdvice: `${cropName} prices are stable.`, bestMarket: 'Nearest APMC', avgPrice: '₹2,500/qt', weekHigh: '₹2,800/qt', weekLow: '₹2,300/qt' }), demandScore: Math.floor(65 + Math.random() * 30), buyerCount: Math.floor(8 + Math.random() * 20), priceHistory: [2800, 2900, 2750, 3000, 3200, 3100, 3400, 3600, 3500, 3800, 3900, 4000].map((v, i) => ({ month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i], price: v })), tip: 'Best time: Early morning APMC auctions. Quality certification gives +5% premium.' };
 }
 
 // ── AUTH ROUTES ───────────────────────────────────────────────────────────────
@@ -1336,7 +1336,7 @@ app.post('/api/auth/digilocker/verify', (req, res) => {
 
   const digiData = role === 'farmer'
     ? { name: 'Basavaraj Patil', district: 'Dharwad', land: '2.5 Acres', type: 'farmer_data', landOwnershipDoc: `KA-LAND-${aadhaar.slice(-6)}`, verifiedAt: new Date().toISOString() }
-    : { name: 'Kisan Fresh Grocers', city: 'Bengaluru', business: 'Retailer', type: 'buyer_data', gstn: `29${aadhaar.slice(0,10)}Z5`, verifiedAt: new Date().toISOString() };
+    : { name: 'Kisan Fresh Grocers', city: 'Bengaluru', business: 'Retailer', type: 'buyer_data', gstn: `29${aadhaar.slice(0, 10)}Z5`, verifiedAt: new Date().toISOString() };
 
   res.json({ success: true, verified: true, data: { ...digiData, aadhaarMasked, role } });
 });
@@ -1364,7 +1364,7 @@ app.post('/api/auth/signup', async (req, res) => {
     badge: role === 'farmer' ? 'Silver Farmer' : 'Verified Buyer',
     createdAt: new Date().toISOString()
   };
-  
+
   await saveUserToFirestore(newUser);
 
   const token = jwt.sign({ id: userId, phone, role, name }, JWT_SECRET, { expiresIn: '7d' });
@@ -1387,13 +1387,13 @@ app.post('/api/auth/signup', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   const { phone, password } = req.body;
   if (!phone || !password) return res.status(400).json({ error: 'Phone and password are required.' });
-  
+
   const user = await getUserByPhone(phone);
   if (!user) return res.status(401).json({ error: 'Phone not registered. Please sign up first.' });
-  
+
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) return res.status(401).json({ error: 'Incorrect password. Please try again.' });
-  
+
   const token = jwt.sign({ id: user.id, phone: user.phone, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
   res.json({ success: true, token, user: { id: user.id, name: user.name, phone: user.phone, role: user.role, district: user.district, badge: user.badge, rating: user.rating, deals: user.deals, digilockerData: user.digilockerData } });
 });
@@ -1791,7 +1791,7 @@ app.post('/api/listings/add', authMiddleware, async (req, res) => {
     createdAt: new Date().toISOString(), active: true
   };
   if (!farmer.listings) farmer.listings = [];
-farmer.listings.push(listing);
+  farmer.listings.push(listing);
   await saveUserToFirestore(farmer);
   res.json({ success: true, listing });
 });
@@ -1807,7 +1807,7 @@ app.get('/api/orders', authMiddleware, async (req, res) => {
 // Buyer creates a new order (Buy Now)
 app.post('/api/orders/create', authMiddleware, async (req, res) => {
   if (req.user.role !== 'buyer') return res.status(403).json({ error: 'Only buyers can place orders.' });
-  
+
   const { listingId, farmerId, cropName, quantity, price, unit, totalAmount } = req.body;
   if (!listingId || !farmerId || !cropName || !totalAmount) {
     return res.status(400).json({ error: 'Missing required order fields' });
@@ -1900,7 +1900,7 @@ app.post('/api/user/update-profile', authMiddleware, async (req, res) => {
 app.use(express.static(join(__dirname, 'dist')));
 
 // Catch-all route for SPA routing
-app.get('/:path*', (req, res, next) => {
+app.get(/.*/, (req, res, next) => {
   // If it looks like an API call, skip static serving
   if (req.path.startsWith('/api')) return next();
   res.sendFile(join(__dirname, 'dist', 'index.html'));
