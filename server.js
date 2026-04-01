@@ -1900,7 +1900,7 @@ app.post('/api/user/update-profile', authMiddleware, async (req, res) => {
 app.use(express.static(join(__dirname, 'dist')));
 
 // Catch-all route for SPA routing
-app.get('/:path*', (req, res, next) => {
+app.get('*', (req, res, next) => {
   // If it looks like an API call, skip static serving
   if (req.path.startsWith('/api')) return next();
   res.sendFile(join(__dirname, 'dist', 'index.html'));
