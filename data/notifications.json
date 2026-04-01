@@ -9,6 +9,16 @@
       "title": "Welcome to Namma Raitha, Basavaraj Patil!",
       "message": "Your farmer account is verified and ready. Start exploring.",
       "icon": "🌾"
+    },
+    {
+      "id": "NOTIF-1774799942210-inwq",
+      "userId": "NR-BUY-941732",
+      "timestamp": "2026-03-29T15:59:02.210Z",
+      "read": true,
+      "type": "welcome",
+      "title": "Welcome to Namma Raitha, Kisan Fresh Grocers!",
+      "message": "Your buyer account is verified and ready. Start exploring.",
+      "icon": "🏪"
     }
   ]
 }

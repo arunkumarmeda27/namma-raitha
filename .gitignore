@@ -7,6 +7,15 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# AI / ML Data & Models
+.cache/
+*.pth
+*.pkl
+dataset_path.txt
+train_image_model.py
+train_model.py
+
+# React / Node
 node_modules
 dist
 dist-ssr

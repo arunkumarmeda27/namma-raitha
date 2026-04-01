@@ -114,6 +114,30 @@
       "deals": 0,
       "badge": "Silver Farmer",
       "createdAt": "2026-03-29T11:29:13.812Z"
+    },
+    {
+      "id": "NR-BUY-941732",
+      "phone": "7894561230",
+      "passwordHash": "$2b$12$OIk7zevlUVya28C1KUNdYuNm7EOiqENKFKpKt7PYIavPZwnhLiMKW",
+      "role": "buyer",
+      "name": "Kisan Fresh Grocers",
+      "district": "Bengaluru",
+      "aadhaarMasked": "XXXX-XXXX-9012",
+      "digilockerData": {
+        "name": "Kisan Fresh Grocers",
+        "city": "Bengaluru",
+        "business": "Retailer",
+        "type": "buyer_data",
+        "gstn": "291234567890Z5",
+        "verifiedAt": "2026-03-29T15:58:48.941Z",
+        "aadhaarMasked": "XXXX-XXXX-9012",
+        "role": "buyer"
+      },
+      "verified": true,
+      "rating": 4.8,
+      "deals": 0,
+      "badge": "Verified Buyer",
+      "createdAt": "2026-03-29T15:59:01.732Z"
     }
   ],
   "otps": {
