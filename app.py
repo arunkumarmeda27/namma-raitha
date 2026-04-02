@@ -8,13 +8,15 @@ from torchvision import transforms, models
 from PIL import Image
 import io
 import base64
+from pathlib import Path
 
 app = Flask(__name__)
 CORS(app)
+BASE_DIR = Path(__file__).resolve().parent
 
 # ── MODEL 1: CROP PREDICTION (.pkl) ───────────────────────────────────────────
 try:
-    crop_model = joblib.load("crop_model.pkl")
+    crop_model = joblib.load(BASE_DIR / "crop_model.pkl")
     print("Crop Prediction Model loaded successfully.")
 except Exception as e:
     print(f"Error loading crop model: {e}")
@@ -25,7 +27,7 @@ image_model = None
 CLASSES = []
 
 try:
-    checkpoint = torch.load("multi_class_crop_model.pth", weights_only=True)
+    checkpoint = torch.load(BASE_DIR / "multi_class_crop_model.pth", weights_only=True)
     CLASSES = checkpoint['classes']
     num_classes = checkpoint['num_classes']
     

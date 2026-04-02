@@ -11,6 +11,9 @@ lerna-debug.log*
 .cache/
 *.pth
 *.pkl
+!crop_model.pkl
+!image_model.pth
+!multi_class_crop_model.pth
 dataset_path.txt
 train_image_model.py
 train_model.py
