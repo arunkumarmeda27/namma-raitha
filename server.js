@@ -34,7 +34,10 @@ const envAllowedOrigins = (process.env.CORS_ORIGINS || '')
 const allowedOrigins = new Set(
   [...defaultAllowedOrigins, ...envAllowedOrigins].map(trimTrailingSlash)
 );
-const allowedOriginPatterns = [/^https?:\/\/[a-z0-9-]+\.ngrok-free\.dev$/i];
+const allowedOriginPatterns = [
+  /^https?:\/\/[a-z0-9-]+\.ngrok-free\.dev$/i,
+  /^https?:\/\/[a-z0-9-]+\.vercel\.app$/i
+];
 const corsOptions = {
   origin(origin, callback) {
     if (!origin) {
