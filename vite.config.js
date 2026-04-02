@@ -8,18 +8,22 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     allowedHosts: [
-      '.ngrok-free.dev'   // 👈 THIS IS THE REAL FIX
+      '.ngrok-free.dev',
+      '.ngrok.io'
     ],
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,
+      },
+      '/ml-api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ml-api/, '')
       }
     },
     hmr: {
-      host: 'liberty-hypermystical-justice.ngrok-free.dev', // 👈 THE REAL FIX
-      protocol: 'wss',
-      clientPort: 443
+      protocol: 'ws'
     }
   }
 })

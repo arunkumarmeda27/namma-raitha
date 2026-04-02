@@ -93,7 +93,7 @@ const upload = multer({
 
 // ── LOCAL JSON DB (users + OTPs only — fast, no Firestore needed) ─────────────
 const DATA_DIR = join(__dirname, 'data');
-const ML_SERVER_URL = process.env.ML_SERVER_URL || 'https://namma-raitha-1.onrender.com';
+const ML_SERVER_URL = process.env.ML_SERVER_URL || 'http://localhost:5000';
 const USERS_FILE = join(DATA_DIR, 'users.json');
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);

@@ -138,6 +138,30 @@
       "deals": 0,
       "badge": "Verified Buyer",
       "createdAt": "2026-03-29T15:59:01.732Z"
+    },
+    {
+      "id": "NR-KA-804542",
+      "phone": "1236547890",
+      "passwordHash": "$2b$12$/8dg4KyP95u3ip46XsniVu93H6mdJeUjkGOxw/mw4t8/fBu.hEF2i",
+      "role": "farmer",
+      "name": "Basavaraj Patil",
+      "district": "Dharwad",
+      "aadhaarMasked": "XXXX-XXXX-9700",
+      "digilockerData": {
+        "name": "Basavaraj Patil",
+        "district": "Dharwad",
+        "land": "2.5 Acres",
+        "type": "farmer_data",
+        "landOwnershipDoc": "KA-LAND-989700",
+        "verifiedAt": "2026-04-02T07:26:33.862Z",
+        "aadhaarMasked": "XXXX-XXXX-9700",
+        "role": "farmer"
+      },
+      "verified": true,
+      "rating": 4.8,
+      "deals": 0,
+      "badge": "Silver Farmer",
+      "createdAt": "2026-04-02T07:26:44.542Z"
     }
   ],
   "otps": {

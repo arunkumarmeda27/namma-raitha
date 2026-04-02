@@ -8,8 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "node server.js",
-    "start": "concurrently \"npm run server\" \"npm run dev\""
+    "ml-server": "python app.py",
+    "start": "concurrently \"npm run ml-server\" \"npm run server\" \"npm run dev\""
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

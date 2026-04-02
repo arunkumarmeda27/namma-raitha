@@ -19,6 +19,16 @@
       "title": "Welcome to Namma Raitha, Kisan Fresh Grocers!",
       "message": "Your buyer account is verified and ready. Start exploring.",
       "icon": "🏪"
+    },
+    {
+      "id": "NOTIF-1775114805455-6syp",
+      "userId": "NR-KA-804542",
+      "timestamp": "2026-04-02T07:26:45.455Z",
+      "read": false,
+      "type": "welcome",
+      "title": "Welcome to Namma Raitha, Basavaraj Patil!",
+      "message": "Your farmer account is verified and ready. Start exploring.",
+      "icon": "🌾"
     }
   ]
 }
