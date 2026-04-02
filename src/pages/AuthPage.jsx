@@ -35,18 +35,38 @@ export default function AuthPage({ onLogin }) {
 
   const showToast = (message, type = 'info') => setToast({ message, type });
 
-  const postJson = async (path, payload) => {
-    const res = await fetch(apiUrl(path), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+  const parseApiResponse = async (res) => {
     const raw = await res.text();
     if (!raw) return { res, data: {} };
     try {
       return { res, data: JSON.parse(raw) };
     } catch {
       return { res, data: { error: raw } };
+    }
+  };
+
+  const postJson = async (path, payload) => {
+    const request = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    };
+    const targetUrl = apiUrl(path);
+
+    try {
+      const res = await fetch(targetUrl, request);
+      return await parseApiResponse(res);
+    } catch (primaryErr) {
+      // If an absolute base URL is misconfigured, retry same-origin path.
+      if (path?.startsWith('/') && targetUrl !== path) {
+        try {
+          const retryRes = await fetch(path, request);
+          return await parseApiResponse(retryRes);
+        } catch {
+          // fall through to original network error
+        }
+      }
+      throw primaryErr;
     }
   };
 
