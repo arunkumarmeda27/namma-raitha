@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://namma-raitha.onrender.com/api/$1"
+    },
+    {
+      "source": "/ml-api/(.*)",
+      "destination": "https://namma-raitha-1.onrender.com/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
