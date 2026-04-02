@@ -27,7 +27,7 @@ image_model = None
 CLASSES = []
 
 try:
-    checkpoint = torch.load(BASE_DIR / "multi_class_crop_model.pth", weights_only=True)
+    checkpoint = torch.load(BASE_DIR / "multi_class_crop_model.pth", map_location=torch.device('cpu'), weights_only=True)
     CLASSES = checkpoint['classes']
     num_classes = checkpoint['num_classes']
     
@@ -43,7 +43,32 @@ except Exception as e:
     print(f"Error loading image model: {e}")
     image_model = None
 
-# ── ENDPOINTS ─────────────────────────────────────────────────────────────────
+# Add simple health check endpoint for Render to track model status
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({
+        "status": "online",
+        "service": "Namma Raitha ML API",
+        "models": {
+            "crop_prediction": "ready" if crop_model else "failed",
+            "image_analysis": "ready" if image_model else "failed"
+        }
+    })
+
+@app.route("/ml-health", methods=["GET"])
+def health():
+    import os
+    files = os.listdir(BASE_DIR)
+    return jsonify({
+        "status": "online",
+        "models": {
+            "crop": crop_model is not None,
+            "image": image_model is not None
+        },
+        "classes_count": len(CLASSES),
+        "directory_files": [f for f in files if f.endswith(('.pkl', '.pth', '.py', '.txt'))],
+        "base_dir": str(BASE_DIR)
+    })
 
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -112,7 +137,9 @@ def predict_image():
             "detected_issues": issues,
             "cropIdentified": pretty_name.split(':')[0].strip()
         })
-    except Exception as e: return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        print(f"Prediction Error: {e}")
+        return jsonify({"error": str(e), "msg": "Analysis process failed"}), 500
 
 import os
 

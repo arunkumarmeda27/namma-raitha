@@ -92,6 +92,7 @@ const upload = multer({
 
 // ── LOCAL JSON DB (users + OTPs only — fast, no Firestore needed) ─────────────
 const DATA_DIR = join(__dirname, 'data');
+const ML_SERVER_URL = process.env.ML_SERVER_URL || 'https://namma-raitha-1.onrender.com';
 const USERS_FILE = join(DATA_DIR, 'users.json');
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
@@ -1626,68 +1627,148 @@ Return JSON:
 
 // ── CROP AI CHAT WITH IMAGE ────────────────────────────────────────────────────
 // Analyze crop image (multimodal)
+// ── AI & ML SERVICES ──────────────────────────────────────────────────────────
+// 1. Crop Recommendation (ML Model)
+app.post('/api/ai/crop-advice', authMiddleware, async (req, res) => {
+  try {
+    console.log(`ML_PROXY: Calling ${ML_SERVER_URL}/predict...`);
+    const flaskRes = await fetch(`${ML_SERVER_URL}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body)
+    });
+    const data = await flaskRes.json();
+    if (!flaskRes.ok) {
+      console.error('ML Server Error State:', { status: flaskRes.status, data });
+      return res.status(flaskRes.status).json({ success: false, ...data });
+    }
+    res.json({ success: true, ...data });
+  } catch (e) {
+    console.error('ML_PROXY_EXCEPTION (Advice):', e.message);
+    res.status(500).json({ error: 'ML Server unavailable', details: e.message });
+  }
+});
+
+// 2. Crop Image Analysis (Hybrid: ML Model + Gemini Fallback)
 app.post('/api/ai/analyze-image', upload.single('image'), async (req, res) => {
-  if (!req.file && !req.body.imageBase64)
-    return res.status(400).json({ error: 'No image provided' });
+  try {
+    const imageBase64 = req.file
+      ? req.file.buffer.toString('base64')
+      : (req.body.imageBase64 ? req.body.imageBase64.replace(/^data:image\/\w+;base64,/, '') : null);
+    const mimeType = req.file ? req.file.mimetype : (req.body.mimeType || 'image/jpeg');
 
-  const imageBase64 = req.file
-    ? req.file.buffer.toString('base64')
-    : req.body.imageBase64.replace(/^data:image\/\w+;base64,/, '');
-  const mimeType = req.file ? req.file.mimetype : (req.body.mimeType || 'image/jpeg');
+    if (!imageBase64) return res.status(400).json({ error: 'Image data is required.' });
 
+    let mlResult = null;
+    
+    // Try Professional ML Model first
+    try {
+      console.log(`ML_PROXY: Calling ${ML_SERVER_URL}/predict-image...`);
+      const flaskRes = await fetch(`${ML_SERVER_URL}/predict-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageBase64 })
+      });
+      if (flaskRes.ok) {
+        mlResult = await flaskRes.json();
+        console.log('ML_PROXY: ML Model Result:', mlResult.status);
+      } else {
+        const errData = await flaskRes.json().catch(() => ({}));
+        console.warn('ML_PROXY: ML Model returned error status:', flaskRes.status, errData);
+      }
+    } catch (e) {
+      console.warn('ML_PROXY_EXCEPTION (Image): ML Model failed:', e.message);
+    }
+
+    // Use Gemini for detailed analysis if available
+    if (GEMINI_API_KEY) {
+      const prompt = `You are an expert agricultural AI. ${mlResult ? `The ML model identified this as: ${mlResult.diagnosis}.` : ''} 
+      Analyze the crop in this image and provide a detailed report in JSON:
+      {
+        "cropIdentified": "name",
+        "healthStatus": "description",
+        "detectedIssues": ["issue1"],
+        "recommendations": ["step1"],
+        "urgencyLevel": "Low|Medium|High",
+        "confidence": 90,
+        "additionalNotes": "..."
+      }`;
+
+      const aiResult = await callGeminiWithImage(prompt, imageBase64, mimeType);
+      if (aiResult) return res.json({ success: true, fromAI: true, analysis: aiResult, mlRef: mlResult });
+    }
+
+    // Final fallback to ML result if Gemini failed
+    if (mlResult) return res.json({ success: true, fromAI: true, analysis: mlResult });
+
+    // Mock safety fallback
+    res.json({
+      success: true, fromAI: false,
+      analysis: {
+        cropIdentified: 'Unknown Crop',
+        healthStatus: 'Unable to analyze',
+        detectedIssues: ['Connection to AI services lost.'],
+        recommendations: ['Please try again later or check your internet.'],
+        urgencyLevel: 'None', confidence: 0,
+        additionalNotes: 'Server-side fallback triggered.'
+      }
+    });
+  } catch (error) {
+    console.error('Analysis Error:', error);
+    res.status(500).json({ error: 'Internal server error during analysis' });
+  }
+});
+
+// 4. ML Server Health Proxy
+app.get('/api/ai/ml-health', async (req, res) => {
+  try {
+    const flaskRes = await fetch(`${ML_SERVER_URL}/ml-health`);
+    const data = await flaskRes.json();
+    res.json({ success: true, node_reachable: true, ...data });
+  } catch (e) {
+    res.status(502).json({ success: false, node_reachable: false, error: e.message, target: ML_SERVER_URL });
+  }
+});
+
+// 3. Market Insights (Gemini)
+app.post('/api/ai/market-insight', authMiddleware, async (req, res) => {
+  const { cropName } = req.body;
   if (!GEMINI_API_KEY) {
     return res.json({
       success: true, fromAI: false,
-      analysis: {
-        cropIdentified: 'Ragi (ರಾಗಿ)',
-        healthStatus: 'Moderate — some yellowing observed',
-        detectedIssues: ['Mild nitrogen deficiency', 'Early signs of leaf spot'],
-        recommendations: ['Apply urea 30kg/acre', 'Spray Mancozeb 2.5g/L', 'Ensure proper drainage'],
-        urgencyLevel: 'Medium',
-        confidence: 75
-      }
+      crop: cropName, avgPrice: '₹2,500/qt', trend: 'Stable', forecast: 'Steady',
+      weekHigh: '₹2,650', weekLow: '₹2,400', buyerCount: 12, demandScore: 75,
+      sellAdvice: 'Market is stable. Good time to sell if you need immediate liquid cash.',
+      bestMarket: 'Mandya APMC', tip: 'Check e-NAM for better transparency.'
     });
   }
 
-  const prompt = `You are an expert agricultural AI analyzing a crop photograph for a Karnataka farmer. Return ONLY valid JSON.
+  const prompt = `Provide a market insight report for the crop "${cropName}" in Karnataka, India as JSON:
+  {
+    "crop": "${cropName}",
+    "avgPrice": "₹XXX/qt",
+    "trend": "Rising|Falling|Stable",
+    "forecast": "Predicted trend",
+    "weekHigh": "₹XXX",
+    "weekLow": "₹XXX",
+    "buyerCount": number,
+    "demandScore": 0-100,
+    "sellAdvice": "advice string",
+    "bestMarket": "location",
+    "tip": "expert tip",
+    "priceHistory": [{"month": "Jan", "price": 2000}, ...] (last 6 months)
+  }`;
 
-Analyze the crop in this image and provide:
-{
-  "cropIdentified": "crop name in English (Kannada name if applicable)",
-  "healthStatus": "Overall health description",
-  "detectedIssues": ["issue1", "issue2"],
-  "recommendations": ["specific actionable step 1", "step 2", "step 3"],
-  "urgencyLevel": "Low|Medium|High|Critical",
-  "confidence": 85,
-  "additionalNotes": "any other observations"
-}
-
-If you cannot identify a crop in the image, state that clearly in cropIdentified.`;
-
-  const aiResult = await callGeminiWithImage(prompt, imageBase64, mimeType);
-  if (aiResult) return res.json({ success: true, fromAI: true, analysis: aiResult });
-
-  // If Gemini API fails or is rate-limited, provide a highly realistic mock fallback
-  // instead of a confusing connection error, ensuring the presentation always looks flawless.
-  res.json({
-    success: true, fromAI: false,
-    analysis: {
-      cropIdentified: 'Healthy Leafy Crop',
-      healthStatus: 'Mild Nutrient Deficiency',
-      detectedIssues: [
-        'Slight yellowing detected on leaf margins.',
-        'Possible early stage nitrogen deficiency.'
-      ],
-      recommendations: [
-        'Apply a balanced NPK organic fertilizer.',
-        'Ensure soil has adequate moisture to absorb nutrients.',
-        'Monitor for 3-5 days to see if color improves.'
-      ],
-      urgencyLevel: 'Low', confidence: 85,
-      additionalNotes: 'Your crop looks mostly healthy! (Offline Mode Fallback)'
-    }
-  });
+  const result = await callGeminiChat([{ role: 'user', content: prompt }]);
+  try {
+    const json = JSON.parse(result.replace(/```json|```/g, ''));
+    res.json({ success: true, fromAI: true, ...json });
+  } catch (e) {
+    res.json({ success: true, fromAI: false, crop: cropName, avgPrice: 'Market Data Unavailable' });
+  }
 });
+
+
 
 // AI Chat (multimodal — text + optional image)
 app.post('/api/ai/chat', async (req, res) => {
@@ -1922,8 +2003,9 @@ app.use((req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🌾 Namma Raitha API Server v3.0`);
+  console.log(`\n🌾 Namma Raitha API Server v3.2`);
   console.log(`   Running at http://localhost:${PORT}`);
+  console.log(`   ML Server: ${ML_SERVER_URL}`);
   console.log(`   AI Mode: ${GEMINI_API_KEY ? '🤖 Gemini AI LIVE (Multimodal)' : '⚠️  No API key — Mock mode'}`);
   console.log(`   SMS: ${SMS_ENABLED ? '📱 Real SMS via Fast2SMS' : '📱 Mock SMS (set SMS_ENABLED=true)'}`);
   console.log(`   Data: ${DATA_DIR}\n`);
