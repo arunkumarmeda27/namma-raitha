@@ -1,5 +1,9 @@
 const normalizeBaseUrl = (value = '') => {
-  const cleaned = String(value).trim().replace(/^['"`\s]+|['"`\s]+$/g, '');
+  const cleaned = String(value)
+    .replace(/%20/gi, '')
+    .trim()
+    .replace(/^['"`\s]+|['"`\s]+$/g, '')
+    .replace(/\s+/g, '');
   return cleaned.replace(/\/+$/, '');
 };
 
