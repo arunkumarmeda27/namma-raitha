@@ -1266,20 +1266,30 @@ function generateOTP() { return Math.floor(100000 + Math.random() * 900000).toSt
 
 // Send OTP
 app.post('/api/auth/send-otp', async (req, res) => {
-  const { phone, role } = req.body;
+  const { phone, role, aadhaar } = req.body;
   if (!phone || phone.length !== 10 || !/^\d+$/.test(phone))
     return res.status(400).json({ error: 'Invalid phone number. Must be 10 digits.' });
+  if (aadhaar && (aadhaar.length !== 12 || !/^\d+$/.test(aadhaar)))
+    return res.status(400).json({ error: 'Invalid Aadhaar number. Must be 12 digits.' });
 
   const otp = generateOTP();
   const udb = loadUsers();
-  udb.otps[phone] = { otp, role, expires: Date.now() + 5 * 60 * 1000 };
+  udb.otps[phone] = { otp, role, aadhaar: aadhaar || undefined, expires: Date.now() + 5 * 60 * 1000 };
   saveUsers(udb);
 
-  const smsMsg = `Your Namma Raitha OTP is: ${otp}. Valid for 5 minutes. Do not share with anyone.`;
+  const smsMsg = aadhaar
+    ? `Your Namma Raitha DigiLocker OTP is: ${otp}. Valid 5 minutes.`
+    : `Your Namma Raitha OTP is: ${otp}. Valid for 5 minutes. Do not share with anyone.`;
   const smsResult = await sendSMS(phone, smsMsg);
 
   console.log(`📱 OTP for +91${phone}: ${otp}`);
-  res.json({ success: true, message: `OTP sent to +91-XXXXXX${phone.slice(-4)}`, smsSent: smsResult.success, mock: smsResult.mock });
+  res.json({
+    success: true,
+    message: `OTP sent to +91-XXXXXX${phone.slice(-4)}`,
+    demoOtp: otp,
+    smsSent: smsResult.success,
+    mock: smsResult.mock
+  });
 });
 
 // Verify OTP (standalone - for phone verification)

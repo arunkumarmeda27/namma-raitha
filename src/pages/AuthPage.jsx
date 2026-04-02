@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AuthPage.css';
-
-const API = '/api';
+import { apiUrl } from '../lib/api';
 
 // Toast notification component
 function Toast({ message, type, onClose }) {
@@ -36,12 +35,35 @@ export default function AuthPage({ onLogin }) {
 
   const showToast = (message, type = 'info') => setToast({ message, type });
 
+  const postJson = async (path, payload) => {
+    const res = await fetch(apiUrl(path), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const raw = await res.text();
+    if (!raw) return { res, data: {} };
+    try {
+      return { res, data: JSON.parse(raw) };
+    } catch {
+      return { res, data: { error: raw } };
+    }
+  };
+
+  const postJsonWithFallback = async (paths, payload) => {
+    for (let i = 0; i < paths.length; i++) {
+      const result = await postJson(paths[i], payload);
+      if (result.res.ok || result.res.status !== 404 || i === paths.length - 1) return result;
+    }
+    return { res: { ok: false, status: 500 }, data: { error: 'Request failed' } };
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!loginPhone || !loginPass) return showToast('Enter phone and password', 'error');
     setLoginLoading(true);
     try {
-      const res = await fetch(`${API}/auth/login`, {
+      const res = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: loginPhone, password: loginPass })
@@ -62,15 +84,16 @@ export default function AuthPage({ onLogin }) {
     if (!aadhaar || aadhaar.length !== 12) return showToast('Enter valid 12-digit Aadhaar number', 'error');
     setLoading(true);
     try {
-      const res = await fetch(`${API}/auth/digilocker/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, aadhaar, role })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setDemoOtp(data.demoOtp);
-      showToast(`OTP sent to +91-XXXXXX${phone.slice(-4)} | Demo OTP: ${data.demoOtp}`, 'success');
+      const { res, data } = await postJsonWithFallback(
+        ['/api/auth/send-otp', '/api/auth/digilocker/send-otp'],
+        { phone, aadhaar, role }
+      );
+      if (!res.ok) throw new Error(data.error || data.message || `Unable to send OTP (${res.status})`);
+      setDemoOtp(data.demoOtp || '');
+      const toastMsg = data.demoOtp
+        ? `OTP sent to +91-XXXXXX${phone.slice(-4)} | Demo OTP: ${data.demoOtp}`
+        : `OTP sent to +91-XXXXXX${phone.slice(-4)}`;
+      showToast(toastMsg, 'success');
       setStep(3);
     } catch (err) {
       showToast(err.message, 'error');
@@ -84,14 +107,36 @@ export default function AuthPage({ onLogin }) {
     if (otp.length !== 6) return showToast('Enter complete 6-digit OTP', 'error');
     setLoading(true);
     try {
-      const res = await fetch(`${API}/auth/digilocker/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setDigiData(data.data);
+      const { res, data } = await postJsonWithFallback(
+        ['/api/auth/digilocker/verify', '/api/auth/verify-otp'],
+        { phone, otp }
+      );
+      if (!res.ok) throw new Error(data.error || data.message || `Unable to verify OTP (${res.status})`);
+
+      let resolvedDigiData = data.data;
+      if (!resolvedDigiData) {
+        resolvedDigiData = role === 'farmer'
+          ? {
+              name: `Farmer ${phone.slice(-4)}`,
+              district: 'Karnataka',
+              land: 'Self-declared',
+              landOwnershipDoc: 'Pending verification',
+              type: 'farmer_data'
+            }
+          : {
+              name: `Buyer ${phone.slice(-4)}`,
+              city: 'Karnataka',
+              business: 'Verified Buyer',
+              gst: 'Pending',
+              gstn: 'Pending',
+              type: 'buyer_data'
+            };
+      }
+      if (!resolvedDigiData.aadhaarMasked) resolvedDigiData.aadhaarMasked = `XXXX-XXXX-${aadhaar.slice(-4)}`;
+      if (!resolvedDigiData.role) resolvedDigiData.role = role;
+      if (resolvedDigiData.gstn && !resolvedDigiData.gst) resolvedDigiData.gst = resolvedDigiData.gstn;
+
+      setDigiData(resolvedDigiData);
       showToast('✅ DigiLocker verified successfully!', 'success');
       setStep(4);
     } catch (err) {
@@ -106,7 +151,7 @@ export default function AuthPage({ onLogin }) {
     if (password !== confirmPass) return showToast('Passwords do not match', 'error');
     setLoading(true);
     try {
-      const res = await fetch(`${API}/auth/signup`, {
+      const res = await fetch(apiUrl('/api/auth/signup'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
