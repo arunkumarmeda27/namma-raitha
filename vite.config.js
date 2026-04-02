@@ -13,12 +13,16 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://127.0.0.1:3001',
         changeOrigin: true,
+        timeout: 60000,
+        proxyTimeout: 60000
       },
       '/ml-api': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
+        timeout: 60000,
+        proxyTimeout: 60000,
         rewrite: (path) => path.replace(/^\/ml-api/, '')
       }
     },

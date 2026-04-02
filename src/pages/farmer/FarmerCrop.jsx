@@ -30,11 +30,16 @@ function AIBadge({ fromAI }) {
 }
 
 export default function FarmerCrop() {
-  const [tab, setTab] = useState('advisor'); // 'advisor' | 'chat' | 'image'
+  const [tab, setTab] = useState('advisor'); // 'advisor' | 'ml' | 'chat' | 'image'
   const [form, setForm] = useState({
     district: 'Dharwad', soilType: 'Red Sandy · ಕೆಂಪು',
     season: 'Kharif (Jun–Oct) · ಮುಂಗಾರು', irrigation: 'Rainfed · ಮಳೆ ಆಧಾರಿತ', landSize: '2.5'
   });
+  const [mlForm, setMlForm] = useState({
+    N: '90', P: '42', K: '43', temperature: '20', humidity: '82', ph: '6.5', rainfall: '200'
+  });
+  const [mlResultData, setMlResultData] = useState(null);
+  const [mlLoading, setMlLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -53,6 +58,12 @@ export default function FarmerCrop() {
   const [imagePreview, setImagePreview] = useState(null);
   const [imageResult, setImageResult] = useState(null);
   const [imageLoading, setImageLoading] = useState(false);
+
+  // Camera state
+  const [isCameraMode, setIsCameraMode] = useState(false);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [stream, setStream] = useState(null);
   const fileInputRef = useRef(null);
 
   const token = localStorage.getItem('nr_token');
@@ -124,6 +135,53 @@ export default function FarmerCrop() {
     reader.readAsDataURL(file);
   };
 
+  const startCamera = async () => {
+    setIsCameraMode(true); setImagePreview(null); setImageResult(null);
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      setStream(s);
+      if (videoRef.current) videoRef.current.srcObject = s;
+    } catch (err) {
+      setError("Camera access denied. Please allow camera permissions.");
+      setIsCameraMode(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); setStream(null); }
+    setIsCameraMode(false);
+  };
+
+  const takePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg');
+    setImagePreview(dataUrl);
+    stopCamera();
+  };
+
+  const handleMlChange = (e) => setMlForm(f => ({ ...f, [e.target.name]: e.target.value }));
+
+  const getMlPrediction = async () => {
+    setMlLoading(true); setError(''); setMlResultData(null);
+    try {
+      const res = await fetch(apiUrl('/api/ai/predict-crop'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(mlForm)
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'ML analysis failed');
+      setMlResultData(data);
+    } catch (e) {
+      setError(e.message.includes('fetch') ? 'Cannot connect to server. Ensure Flask (5000) and Backend (3001) are running.' : e.message);
+    } finally { setMlLoading(false); }
+  };
+
   const analyzeCropImage = async () => {
     if (!imageFile && !imagePreview) return;
     setImageLoading(true); setImageResult(null);
@@ -154,9 +212,15 @@ export default function FarmerCrop() {
   const getRiskClass = (r) => r === 'Low' ? '#4CAF50' : r === 'Medium' ? '#FF9800' : '#F44336';
 
   // Format AI message text with markdown-like bold
+  // Format AI message text with markdown-like bold, lists, and headers
   const formatMessage = (text) => {
     if (!text) return '';
-    return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>');
+    return text
+      .replace(/^### (.+)/gm, '<h3 style="font-size:0.95rem;margin:10px 0 5px;color:#1565C0">$1</h3>')
+      .replace(/^## (.+)/gm, '<h2 style="font-size:1.05rem;margin:12px 0 6px;color:#1565C0">$1</h2>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^[*-] (.+)/gm, '<div style="display:flex;gap:6px;margin:3px 0"><span style="color:#1565C0">•</span><span>$1</span></div>')
+      .replace(/\n/g, '<br/>');
   };
 
   return (
@@ -168,21 +232,22 @@ export default function FarmerCrop() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', background: '#F5F5F5', padding: '4px', borderRadius: '12px' }}>
+      <div style={{ display: 'flex', gap: '5px', marginBottom: '16px', background: '#F5F5F5', padding: '4px', borderRadius: '12px', overflowX: 'auto' }}>
         {[
-          { id: 'advisor', label: '🤖 Advisor', sub: 'Crop Advice' },
-          { id: 'chat', label: '💬 AI Chat', sub: 'Ask Anything' },
-          { id: 'image', label: '📸 Image AI', sub: 'Photo Analysis' }
+          { id: 'advisor', label: '🤖 Advisor', sub: 'Expert' },
+          { id: 'ml', label: '🧪 Precision ML', sub: 'Scientific' },
+          { id: 'chat', label: '💬 Chat', sub: 'Ask AI' },
+          { id: 'image', label: '📸 Image AI', sub: 'Vision' }
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
-            flex: 1, padding: '8px 4px', border: 'none', borderRadius: '10px', cursor: 'pointer',
+            flex: 1, minWidth: '85px', padding: '8px 2px', border: 'none', borderRadius: '10px', cursor: 'pointer',
             background: tab === t.id ? '#fff' : 'transparent',
             boxShadow: tab === t.id ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
-            fontWeight: tab === t.id ? 700 : 400, fontSize: '0.75rem', color: tab === t.id ? '#1565C0' : '#757575',
+            fontWeight: tab === t.id ? 700 : 400, fontSize: '0.72rem', color: tab === t.id ? '#1565C0' : '#757575',
             transition: 'all 0.2s'
           }}>
             <div>{t.label}</div>
-            <div style={{ fontSize: '0.6rem', opacity: 0.7 }}>{t.sub}</div>
+            <div style={{ fontSize: '0.55rem', opacity: 0.7 }}>{t.sub}</div>
           </button>
         ))}
       </div>
@@ -282,6 +347,63 @@ export default function FarmerCrop() {
               >
                 💬 Chat with AI about these crops →
               </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── TAB: PRECISION ML ─────────────────────────────────────────────────── */}
+      {tab === 'ml' && (
+        <>
+          <div style={{ background: 'linear-gradient(135deg, #E8F5E9, #C8E6C9)', padding: '10px 12px', borderRadius: '10px', fontSize: '0.75rem', color: '#2E7D32', marginBottom: '14px' }}>
+            🧪 <strong>Precision ML Model</strong>: Enter your soil test values and climate data for the most accurate crop recommendation.
+          </div>
+          <div className="form-box">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
+              <div>
+                <div className="fl">Nitrogen (N)</div>
+                <input className="inp" name="N" type="number" value={mlForm.N} onChange={handleMlChange} />
+              </div>
+              <div>
+                <div className="fl">Phosphorus (P)</div>
+                <input className="inp" name="P" type="number" value={mlForm.P} onChange={handleMlChange} />
+              </div>
+              <div>
+                <div className="fl">Potassium (K)</div>
+                <input className="inp" name="K" type="number" value={mlForm.K} onChange={handleMlChange} />
+              </div>
+              <div>
+                <div className="fl">Soil pH</div>
+                <input className="inp" name="ph" type="number" step="0.1" value={mlForm.ph} onChange={handleMlChange} />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
+              <div>
+                <div className="fl">Temp (°C)</div>
+                <input className="inp" name="temperature" type="number" value={mlForm.temperature} onChange={handleMlChange} />
+              </div>
+              <div>
+                <div className="fl">Humidity (%)</div>
+                <input className="inp" name="humidity" type="number" value={mlForm.humidity} onChange={handleMlChange} />
+              </div>
+            </div>
+            <div className="fl">Rainfall (cm/yr)</div>
+            <input className="inp" name="rainfall" type="number" value={mlForm.rainfall} onChange={handleMlChange} style={{ marginBottom: '15px' }} />
+
+            <button className="btn-green" onClick={getMlPrediction} disabled={mlLoading} style={{ width: '100%', padding: '12px', fontWeight: 700 }}>
+              {mlLoading ? <><span className="ai-spinner" /> Predicting...</> : '🎯 Predict Best Crop'}
+            </button>
+            {error && <div style={{ color: '#C62828', fontSize: '0.8rem', marginTop: '10px', background: '#FFEBEE', padding: '10px', borderRadius: '8px' }}>⚠️ {error}</div>}
+          </div>
+
+          {mlResultData && (
+            <div style={{ marginTop: '20px', background: '#fff', borderRadius: '14px', padding: '15px', border: '2px solid #4CAF50', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '5px' }}>Optimal Crop for your Soil:</div>
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🌾</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#2E7D32' }}>{mlResultData.prediction}</div>
+              <div style={{ fontSize: '0.75rem', color: '#757575', marginTop: '10px' }}>
+                This prediction is based on normalized Gradient Boosting patterns from your soil's NPK values.
+              </div>
             </div>
           )}
         </>
@@ -392,35 +514,53 @@ export default function FarmerCrop() {
             📸 <strong>Upload a photo</strong> of your crop (leaves, stem, fruit) and AI will diagnose diseases, pests, and nutrient deficiencies instantly!
           </div>
 
-          {/* Upload Area */}
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              border: '2px dashed #BBDEFB', borderRadius: '14px', padding: '28px 16px',
-              textAlign: 'center', cursor: 'pointer', background: imagePreview ? 'transparent' : '#F3F9FF',
-              transition: 'all 0.2s', position: 'relative', minHeight: '180px',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-            }}
-            onMouseOver={e => { if (!imagePreview) e.currentTarget.style.background = '#E3F2FD'; }}
-            onMouseOut={e => { if (!imagePreview) e.currentTarget.style.background = '#F3F9FF'; }}
-          >
-            {imagePreview ? (
-              <img src={imagePreview} alt="Crop preview" style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '10px', objectFit: 'contain' }} />
-            ) : (
-              <>
-                <div style={{ fontSize: '3rem', marginBottom: '10px' }}>📷</div>
-                <div style={{ fontWeight: 700, color: '#1565C0', fontSize: '0.9rem' }}>Tap to upload crop photo</div>
-                <div style={{ fontSize: '0.72rem', color: '#757575', marginTop: '6px' }}>Supports JPG, PNG, HEIC · Max 10MB</div>
-                <div style={{ fontSize: '0.68rem', color: '#9E9E9E', marginTop: '4px' }}>📱 Use camera for best results</div>
-              </>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file" accept="image/*" capture="environment"
-              onChange={handleImageSelect}
-              style={{ display: 'none' }}
-            />
-          </div>
+          {/* Camera / Upload Toggles */}
+          {!imagePreview && !imageResult && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => { setIsCameraMode(false); fileInputRef.current?.click(); }} style={{ flex: 1, padding: '10px', background: !isCameraMode ? '#E3F2FD' : '#f5f5f5', color: !isCameraMode ? '#1565C0' : '#757575', border: '1px solid ' + (!isCameraMode ? '#BBDEFB' : '#E0E0E0'), borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>📁 Upload File</button>
+              <button onClick={startCamera} style={{ flex: 1, padding: '10px', background: isCameraMode ? '#E3F2FD' : '#f5f5f5', color: isCameraMode ? '#1565C0' : '#757575', border: '1px solid ' + (isCameraMode ? '#BBDEFB' : '#E0E0E0'), borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>📸 Live Camera</button>
+            </div>
+          )}
+
+          {/* Camera View */}
+          {isCameraMode && !imagePreview && (
+            <div style={{ position: 'relative', background: '#000', borderRadius: '14px', overflow: 'hidden', minHeight: '300px' }}>
+              <video ref={videoRef} autoPlay playsInline style={{ width: '100%', display: 'block' }} />
+              <div style={{ position: 'absolute', bottom: '20px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '15px' }}>
+                <button onClick={takePhoto} style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#fff', border: '5px solid rgba(21,101,192,0.3)', cursor: 'pointer' }} />
+                <button onClick={stopCamera} style={{ position: 'absolute', right: '20px', bottom: '15px', background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: '20px', fontSize: '0.7rem', cursor: 'pointer' }}>Cancel</button>
+              </div>
+              <canvas ref={canvasRef} style={{ display: 'none' }} />
+            </div>
+          )}
+
+          {/* Upload Area / Preview */}
+          {!isCameraMode && (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: '2px dashed #BBDEFB', borderRadius: '14px', padding: '28px 16px',
+                textAlign: 'center', cursor: 'pointer', background: imagePreview ? 'transparent' : '#F3F9FF',
+                transition: 'all 0.2s', position: 'relative', minHeight: '180px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              {imagePreview ? (
+                <img src={imagePreview} alt="Crop preview" style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '10px', objectFit: 'contain' }} />
+              ) : (
+                <>
+                  <div style={{ fontSize: '3rem', marginBottom: '10px' }}>📁</div>
+                  <div style={{ fontWeight: 700, color: '#1565C0', fontSize: '0.9rem' }}>Tap to select from storage</div>
+                  <div style={{ fontSize: '0.72rem', color: '#757575', marginTop: '6px' }}>JPG, PNG · Max 10MB</div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Capture Result Preview (When taken from camera) */}
+          {isCameraMode === false && imagePreview && stream === null && (
+            <img src={imagePreview} alt="Captured crop" style={{ width: '100%', borderRadius: '14px', maxHeight: '300px', objectFit: 'cover', border: '1px solid #E0E0E0' }} />
+          )}
 
           {imagePreview && (
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -441,7 +581,7 @@ export default function FarmerCrop() {
             <div style={{ background: '#fff', border: '1px solid #E0E0E0', borderRadius: '14px', overflow: 'hidden' }}>
               <div style={{ background: 'linear-gradient(135deg, #1565C0, #1E88E5)', padding: '12px 14px', color: '#fff' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>🔬 AI Analysis Result</div>
-                <div style={{ fontSize: '0.7rem', opacity: 0.85 }}>Confidence: {imageResult.confidence}%</div>
+                <div style={{ fontSize: '0.7rem', opacity: 0.85 }}>Confidence: {imageResult.confidence?.toString().includes('%') ? imageResult.confidence : `${imageResult.confidence}%`}</div>
               </div>
               <div style={{ padding: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -454,14 +594,21 @@ export default function FarmerCrop() {
                     background: imageResult.urgencyLevel === 'Low' ? '#E8F5E9' : imageResult.urgencyLevel === 'Medium' ? '#FFF3E0' : '#FFEBEE',
                     color: imageResult.urgencyLevel === 'Low' ? '#2E7D32' : imageResult.urgencyLevel === 'Medium' ? '#E65100' : '#C62828'
                   }}>
-                    {imageResult.urgencyLevel} Urgency
+                    {imageResult.urgencyLevel || 'Medium'} Urgency
                   </span>
                 </div>
 
                 <div style={{ background: '#F5F5F5', borderRadius: '10px', padding: '10px', marginBottom: '12px' }}>
                   <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#424242', marginBottom: '4px' }}>Health Status</div>
-                  <div style={{ fontSize: '0.8rem', color: '#616161' }}>{imageResult.healthStatus}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#616161' }}>{imageResult.healthStatus || 'Analysis complete'}</div>
                 </div>
+
+                {imageResult.visualDescription && (
+                  <div style={{ borderLeft: '3px solid #1E88E5', background: '#F3F9FF', borderRadius: '0 10px 10px 0', padding: '10px', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#1565C0', marginBottom: '4px' }}>🔬 Visual Analysis</div>
+                    <div style={{ fontSize: '0.78rem', color: '#455A64', fontStyle: 'italic', lineHeight: 1.4 }}>"{imageResult.visualDescription}"</div>
+                  </div>
+                )}
 
                 {imageResult.detectedIssues?.length > 0 && (
                   <div style={{ marginBottom: '12px' }}>

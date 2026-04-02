@@ -93,7 +93,7 @@ const upload = multer({
 
 // ── LOCAL JSON DB (users + OTPs only — fast, no Firestore needed) ─────────────
 const DATA_DIR = join(__dirname, 'data');
-const ML_SERVER_URL = process.env.ML_SERVER_URL || 'http://localhost:5000';
+const ML_SERVER_URL = process.env.ML_SERVER_URL || 'http://127.0.0.1:5000';
 const USERS_FILE = join(DATA_DIR, 'users.json');
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
@@ -240,6 +240,9 @@ async function addNotification(userId, notification) {
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
 app.use(express.json({ limit: '20mb' }));
+
+// ── HEALTH CHECK ──────────────────────────────────────────────────────────────
+app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString(), port: PORT }));
 
 // Auth middleware
 function authMiddleware(req, res, next) {
@@ -1190,10 +1193,14 @@ async function callGeminiWithImage(prompt, imageBase64, mimeType = 'image/jpeg')
 async function callGeminiChat(messages) {
   if (!GEMINI_API_KEY) return null;
   try {
-    const systemMsg = `You are Raitha AI, an expert agricultural advisor for Karnataka, India.
-Help farmers with: crop diseases, pest control, farming techniques, market prices, government schemes, and agriculture.
-Always respond in English but include Kannada crop names in parentheses where helpful.
-Be friendly, practical, and specific to Karnataka conditions. Keep answers concise.`;
+    const systemMsg = `You are Raitha AI (ಬೆಳೆಗಾರರ ಕೃತಕ ಬುದ್ಧಿಮತ್ತೆ), the premier Master Agricultural Advisor for Karnataka, India.
+Your mission is to provide hyper-local, expert-level agriculture prescriptions that WOW the farmer.
+
+1. PERSONALITY: Professional, encouraging, and deeply knowledgeable about Karnataka's geography (Dharwad, Mandya, etc.).
+2. BILINGUAL: Use English for structure, but ALWAYS include key Kannada terms in (parentheses) for crops, pests, and soil types.
+3. SPECIFICITY: Never give generic advice. Mention specific seed varieties (e.g., MRB-1 Ragi, PKV-4 Cotton), fertilizer dosages (e.g., 20:20:0:13 NPK), and exact months for sowing.
+4. FORMATTING: Use **bold** for emphasis, bullet points for steps, and clear headings.
+5. CONTEXT: Consider local Karnataka festivals and current seasons (Kharif/Rabi/Zaid) in your market and sowing outlooks.`;
 
     const contents = messages
       .filter(m => m.content && m.content.trim())
@@ -1561,19 +1568,37 @@ app.post('/api/ai/crop-advice', async (req, res) => {
   const { district, soilType, season, irrigation, landSize } = req.body;
 
   if (GEMINI_API_KEY) {
-    const prompt = `You are an expert Karnataka agricultural AI advisor. Return ONLY valid JSON.
+    const prompt = `You are an expert Karnataka Master Agronomist. Provide a highly professional crop recommendation plan. Return ONLY valid JSON.
 
-Farm Details: District=${district || 'Dharwad'}, Soil=${soilType || 'Red Sandy'}, Season=${season || 'Kharif'}, Irrigation=${irrigation || 'Rainfed'}, Land=${landSize || 2.5} acres
+Farm Profile: District=${district || 'Dharwad'}, Soil=${soilType || 'Red Sandy'}, Season=${season || 'Kharif'}, Irrigation=${irrigation || 'Rainfed'}, Land=${landSize || 2.5} acres
+
+Include:
+1. SPECIFIC VARIETIES: Name at least 2 high-yield seed varieties (Hybrid/Traditional) popular in this district.
+2. FERTILIZER SCHEDULE: Mention exact NPK or Bio-fertilizer dosages.
+3. ECONOMIC OUTLOOK: Realistic profit forecast based on 2024-25 MSP.
 
 Return JSON:
 {
-  "summary": "brief analysis",
-  "topCrops": [{"name":"","icon":"emoji","kannadaName":"","profitPerAcre":55000,"yieldPerAcre":"15-18 qt","risk":"Low|Medium|High","aiScore":92,"waterRequirement":"Low|Medium|High","msPrice":"₹3,846/qt","advice":"specific advice"}],
-  "generalAdvice": "farm strategy",
-  "weatherForecast": "weather note",
-  "aiConfidence": 88
+  "summary": "Detailed district-level analysis of soil and climate feasibility.",
+  "topCrops": [
+    {
+      "name": "Crop Name",
+      "icon": "emoji", 
+      "kannadaName": "ಕರ್ನಾಟಕ ಹೆಸರು",
+      "profitPerAcre": 55000,
+      "yieldPerAcre": "15-18 qt",
+      "risk": "Low|Medium|High",
+      "aiScore": 95,
+      "waterRequirement": "Low|Medium|High",
+      "msPrice": "₹X,XXX/qt",
+      "advice": "**Variety**: SeedName. **Dosage**: NPK details. **Best Sowing**: Month range."
+    }
+  ],
+  "generalAdvice": "Advanced multi-cropping strategy for this land size.",
+  "weatherForecast": "Hyper-local weather outlook (e.g., monsoon arrival, temperature alerts).",
+  "aiConfidence": 95
 }
-Include exactly 3 crops. Focus on Karnataka-specific varieties.`;
+Include exactly 3 crops. Ensure descriptions are professional and detailed.`;
 
     const aiResult = await callGemini(prompt);
     if (aiResult) return res.json({ success: true, fromAI: true, ...aiResult });
@@ -1629,10 +1654,11 @@ Return JSON:
 // ── CROP AI CHAT WITH IMAGE ────────────────────────────────────────────────────
 // Analyze crop image (multimodal)
 // ── AI & ML SERVICES ──────────────────────────────────────────────────────────
-// 1. Crop Recommendation (ML Model)
-app.post('/api/ai/crop-advice', authMiddleware, async (req, res) => {
+// 1. Precision Crop Prediction (Scientific ML Model)
+app.post('/api/ai/predict-crop', authMiddleware, async (req, res) => {
   try {
-    console.log(`ML_PROXY: Calling ${ML_SERVER_URL}/predict...`);
+    console.log(`ML_PROXY: Calling ${ML_SERVER_URL}/predict with Precision Data...`);
+    // Pass N, P, K, temperature, humidity, ph, rainfall
     const flaskRes = await fetch(`${ML_SERVER_URL}/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1643,15 +1669,22 @@ app.post('/api/ai/crop-advice', authMiddleware, async (req, res) => {
       console.error('ML Server Error State:', { status: flaskRes.status, data });
       return res.status(flaskRes.status).json({ success: false, ...data });
     }
-    res.json({ success: true, ...data });
+    // Return the specific precision crop prediction
+    res.json({ success: true, fromAI: false, prediction: data.crop });
   } catch (e) {
-    console.error('ML_PROXY_EXCEPTION (Advice):', e.message);
-    res.status(500).json({ error: 'ML Server unavailable', details: e.message });
+    console.error('ML_PROXY_EXCEPTION (Predict):', e.message);
+    res.status(500).json({ error: 'ML Precision Service unavailable', details: e.message });
   }
 });
 
 // 2. Crop Image Analysis (Hybrid: ML Model + Gemini Fallback)
-app.post('/api/ai/analyze-image', upload.single('image'), async (req, res) => {
+// Flexible endpoint: handles both JSON (base64) and Multipart (File)
+app.post('/api/ai/analyze-image', (req, res, next) => {
+  if (req.headers['content-type']?.includes('multipart/form-data')) {
+    return upload.single('image')(req, res, next);
+  }
+  next();
+}, async (req, res) => {
   try {
     const imageBase64 = req.file
       ? req.file.buffer.toString('base64')
@@ -1683,16 +1716,23 @@ app.post('/api/ai/analyze-image', upload.single('image'), async (req, res) => {
 
     // Use Gemini for detailed analysis if available
     if (GEMINI_API_KEY) {
-      const prompt = `You are an expert agricultural AI. ${mlResult ? `The ML model identified this as: ${mlResult.diagnosis}.` : ''} 
-      Analyze the crop in this image and provide a detailed report in JSON:
+      const prompt = `You are an expert agricultural AI Vision Analyst. ${mlResult ? `The ML model identified this as: ${mlResult.diagnosis}.` : ''} 
+      As a PhD Agronomist, analyze this crop image. Describe what you see visually before diagnosing.
+      
+      Return ONLY valid JSON:
       {
-        "cropIdentified": "name",
-        "healthStatus": "description",
-        "detectedIssues": ["issue1"],
-        "recommendations": ["step1"],
-        "urgencyLevel": "Low|Medium|High",
-        "confidence": 90,
-        "additionalNotes": "..."
+        "cropIdentified": "Crop Name (ಕನ್ನಡ ಹೆಸರು)",
+        "visualDescription": "Expert observation of leaf color, spots, pattern, and texture.",
+        "healthStatus": "Short status sentence.",
+        "detectedIssues": ["Scientific Name and Common Name of disease/pest"],
+        "recommendations": [
+          "Dosage: e.g., 2ml/L of Monocrotophos...",
+          "Immediate cultural practice...",
+          "Next 7-day monitoring plan..."
+        ],
+        "urgencyLevel": "Low|Medium|High|Critical",
+        "confidence": 95,
+        "additionalNotes": "Local Karnataka Krishi Vigyan Kendra (KVK) specific advice."
       }`;
 
       const aiResult = await callGeminiWithImage(prompt, imageBase64, mimeType);
@@ -1700,7 +1740,19 @@ app.post('/api/ai/analyze-image', upload.single('image'), async (req, res) => {
     }
 
     // Final fallback to ML result if Gemini failed
-    if (mlResult) return res.json({ success: true, fromAI: true, analysis: mlResult });
+    if (mlResult) {
+      // Normalize ML keys to match Premium UI expectations
+      const normalized = {
+        cropIdentified: mlResult.cropIdentified || 'Crop Detected',
+        visualDescription: mlResult.diagnosis || 'Analysis performed by professional local ML model.',
+        healthStatus: mlResult.status || 'Active Diagnosis',
+        detectedIssues: mlResult.detected_issues || (mlResult.diagnosis ? [mlResult.diagnosis] : []),
+        recommendations: mlResult.detailed_recommendations || (mlResult.recommendation ? [mlResult.recommendation] : []),
+        urgencyLevel: mlResult.status === 'Healthy' ? 'Low' : 'High',
+        confidence: mlResult.confidence ? mlResult.confidence.toString().replace('%', '') : '90'
+      };
+      return res.json({ success: true, fromAI: true, analysis: normalized, isMLFallback: true });
+    }
 
     // Mock safety fallback
     res.json({
@@ -2003,11 +2055,21 @@ app.use((req, res, next) => {
   next();
 });
 
-app.listen(PORT, () => {
-  console.log(`\n🌾 Namma Raitha API Server v3.2`);
-  console.log(`   Running at http://localhost:${PORT}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n🌾 Namma Raitha API Server v3.3`);
+  console.log(`   Local:     http://127.0.0.1:${PORT}`);
+  console.log(`   Network:   http://0.0.0.0:${PORT}`);
   console.log(`   ML Server: ${ML_SERVER_URL}`);
-  console.log(`   AI Mode: ${GEMINI_API_KEY ? '🤖 Gemini AI LIVE (Multimodal)' : '⚠️  No API key — Mock mode'}`);
-  console.log(`   SMS: ${SMS_ENABLED ? '📱 Real SMS via Fast2SMS' : '📱 Mock SMS (set SMS_ENABLED=true)'}`);
-  console.log(`   Data: ${DATA_DIR}\n`);
+  console.log(`   AI Mode:   ${GEMINI_API_KEY ? '🤖 Gemini AI LIVE (Multimodal)' : '⚠️  No API key — Mock mode'}`);
+  console.log(`   SMS:       ${SMS_ENABLED ? '📱 Real SMS via Fast2SMS' : '📱 Mock SMS (set SMS_ENABLED=true)'}`);
+  console.log(`   Data:      ${DATA_DIR}\n`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ FATAL: Port ${PORT} is already in use by another process.`);
+    process.exit(1);
+  } else {
+    console.error('❌ Server error:', err);
+  }
 });

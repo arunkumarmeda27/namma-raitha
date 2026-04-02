@@ -29,6 +29,16 @@
       "title": "Welcome to Namma Raitha, Basavaraj Patil!",
       "message": "Your farmer account is verified and ready. Start exploring.",
       "icon": "🌾"
+    },
+    {
+      "id": "NOTIF-1775116933752-k5w9",
+      "userId": "NR-KA-932922",
+      "timestamp": "2026-04-02T08:02:13.752Z",
+      "read": false,
+      "type": "welcome",
+      "title": "Welcome to Namma Raitha, Basavaraj Patil!",
+      "message": "Your farmer account is verified and ready. Start exploring.",
+      "icon": "🌾"
     }
   ]
 }

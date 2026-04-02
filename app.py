@@ -22,7 +22,7 @@ except Exception as e:
     print(f"Error loading crop model: {e}")
     crop_model = None
 
-# ── MODEL 2: MULTI-CLASS IMAGE ANALYSIS (MobileNetV2 .pth) ───────────────────
+# ── MODEL 2: MULTI-CLASS IMAGE ANALYSIS (Hybrid Support) ──────────────────────
 image_model = None
 CLASSES = []
 
@@ -30,15 +30,22 @@ try:
     checkpoint = torch.load(BASE_DIR / "multi_class_crop_model.pth", map_location=torch.device('cpu'), weights_only=True)
     CLASSES = checkpoint['classes']
     num_classes = checkpoint['num_classes']
+    arch = checkpoint.get('arch', 'mobilenet') # Default to mobilenet for backward compatibility
     
-    # Reconstruct exact architecture from training
-    image_model = models.mobilenet_v2(weights=None)
-    num_ftrs = image_model.classifier[1].in_features
-    image_model.classifier[1] = nn.Linear(num_ftrs, num_classes)
+    if arch == 'resnet50':
+        print("Detected Scientific ResNet50 architecture...")
+        image_model = models.resnet50(weights=None)
+        num_ftrs = image_model.fc.in_features
+        image_model.fc = nn.Linear(num_ftrs, num_classes)
+    else:
+        print("Detected MobileNetV2 architecture...")
+        image_model = models.mobilenet_v2(weights=None)
+        num_ftrs = image_model.classifier[1].in_features
+        image_model.classifier[1] = nn.Linear(num_ftrs, num_classes)
     
     image_model.load_state_dict(checkpoint['model_state_dict'])
     image_model.eval()
-    print(f"Professional Image AI Model loaded successfully with {len(CLASSES)} classes.")
+    print(f"Professional Image AI Model ({arch}) loaded successfully with {len(CLASSES)} classes.")
 except Exception as e:
     print(f"Error loading image model: {e}")
     image_model = None

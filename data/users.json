@@ -162,6 +162,30 @@
       "deals": 0,
       "badge": "Silver Farmer",
       "createdAt": "2026-04-02T07:26:44.542Z"
+    },
+    {
+      "id": "NR-KA-932922",
+      "phone": "9873216540",
+      "passwordHash": "$2b$12$xsietJVlty7xCG/AD.f.aOIuYmuFEbUYpfCzNl4lJoJXckNvYiFp6",
+      "role": "farmer",
+      "name": "Basavaraj Patil",
+      "district": "Dharwad",
+      "aadhaarMasked": "XXXX-XXXX-9632",
+      "digilockerData": {
+        "name": "Basavaraj Patil",
+        "district": "Dharwad",
+        "land": "2.5 Acres",
+        "type": "farmer_data",
+        "landOwnershipDoc": "KA-LAND-789632",
+        "verifiedAt": "2026-04-02T08:01:56.405Z",
+        "aadhaarMasked": "XXXX-XXXX-9632",
+        "role": "farmer"
+      },
+      "verified": true,
+      "rating": 4.8,
+      "deals": 0,
+      "badge": "Silver Farmer",
+      "createdAt": "2026-04-02T08:02:12.922Z"
     }
   ],
   "otps": {
