@@ -36,7 +36,8 @@ const allowedOrigins = new Set(
 );
 const allowedOriginPatterns = [
   /^https?:\/\/[a-z0-9-]+\.ngrok-free\.dev$/i,
-  /^https?:\/\/[a-z0-9-]+\.vercel\.app$/i
+  /^https?:\/\/[a-z0-9-]+\.vercel\.app$/i,
+  /^https?:\/\/[a-z0-9-]+\.onrender\.com$/i
 ];
 const corsOptions = {
   origin(origin, callback) {
