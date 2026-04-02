@@ -19,7 +19,12 @@ const validateAbsoluteBaseUrl = (value = '') => {
   }
 };
 
-export const API_BASE_URL = validateAbsoluteBaseUrl(import.meta.env.VITE_API_BASE_URL || '');
+// In production (Vercel), we MUST use relative paths to trigger the vercel.json rewrites.
+// This bypasses any accidental trailing spaces in the dashboard env settings.
+export const API_BASE_URL = import.meta.env.PROD
+  ? ''
+  : validateAbsoluteBaseUrl(import.meta.env.VITE_API_BASE_URL || '');
+
 export const ML_API_URL = normalizeBaseUrl(import.meta.env.VITE_ML_API_URL || '/ml-api');
 
 export const NGROK_SKIP_HEADER = { 'ngrok-skip-browser-warning': '69420' };
