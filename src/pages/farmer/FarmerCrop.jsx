@@ -514,6 +514,15 @@ export default function FarmerCrop() {
             📸 <strong>Upload a photo</strong> of your crop (leaves, stem, fruit) and AI will diagnose diseases, pests, and nutrient deficiencies instantly!
           </div>
 
+          {/* Hidden File Input */}
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImageSelect} 
+            accept="image/*" 
+            style={{ display: 'none' }} 
+          />
+
           {/* Camera / Upload Toggles */}
           {!imagePreview && !imageResult && (
             <div style={{ display: 'flex', gap: '8px' }}>
