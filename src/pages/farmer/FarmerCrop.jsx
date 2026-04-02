@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const API = 'http://localhost:3001';
+import { apiUrl } from '../../lib/api';
 
 const DISTRICTS = ['Dharwad','Gadag','Bellary','Haveri','Bidar','Kalaburagi','Kodagu','Hassan','Mysuru','Bengaluru Urban','Shivamogga','Chitradurga','Tumkur','Raichur','Koppal','Yadgir','Bagalkot','Vijayapura'];
 const SOIL_TYPES = ['Red Sandy · ಕೆಂಪು','Black Cotton · ಕಪ್ಪು','Laterite · ಮುರಮ್','Alluvial · ಮೆಕ್ಕಲು'];
@@ -67,7 +67,7 @@ export default function FarmerCrop() {
   const getAdvice = async () => {
     setLoading(true); setError(''); setResult(null);
     try {
-      const res = await fetch(`${API}/api/ai/crop-advice`, {
+      const res = await fetch(apiUrl('/api/ai/crop-advice'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ district: form.district, soilType: form.soilType, season: form.season, irrigation: form.irrigation, landSize: parseFloat(form.landSize) })
@@ -91,7 +91,7 @@ export default function FarmerCrop() {
     setChatLoading(true);
 
     try {
-      const res = await fetch(`${API}/api/ai/chat`, {
+      const res = await fetch(apiUrl('/api/ai/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -130,7 +130,7 @@ export default function FarmerCrop() {
     try {
       const base64 = imagePreview.split(',')[1];
       const mimeType = imageFile?.type || 'image/jpeg';
-      const res = await fetch(`${API}/api/ai/analyze-image`, {
+      const res = await fetch(apiUrl('/api/ai/analyze-image'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ imageBase64: base64, mimeType })

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { apiUrl } from '../lib/api';
 
-const API = 'http://localhost:3001';
 
 function timeAgo(ts) {
   const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
@@ -29,7 +29,7 @@ export default function Notifications({ token }) {
   const fetchNotifications = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${API}/api/notifications`, {
+      const res = await fetch(apiUrl('/api/notifications'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.status === 401) {
@@ -56,7 +56,7 @@ export default function Notifications({ token }) {
   const markAllRead = async () => {
     if (!token) return;
     try {
-      await fetch(`${API}/api/notifications/read-all`, {
+      await fetch(apiUrl('/api/notifications/read-all'), {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -68,7 +68,7 @@ export default function Notifications({ token }) {
   const markRead = async (id) => {
     if (!token) return;
     try {
-      await fetch(`${API}/api/notifications/${id}/read`, {
+      await fetch(apiUrl(`/api/notifications/${id}/read`), {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       });

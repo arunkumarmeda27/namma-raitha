@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiUrl } from '../../lib/api';
 
 function AIBadge({ fromAI }) {
   return <span className={`ai-badge ${fromAI ? '' : 'mock'}`}>🤖 {fromAI ? 'Gemini AI' : 'Smart AI'}</span>;
@@ -37,7 +38,7 @@ export default function FarmerSolutions({ onNav }) {
     setAiResult(null);
     try {
       const token = localStorage.getItem('nr_token');
-      const res = await fetch('http://localhost:3001/api/ai/pest-diagnosis', {
+      const res = await fetch(apiUrl('/api/ai/pest-diagnosis'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ cropName: finalCrop, symptoms: symptoms.trim() })

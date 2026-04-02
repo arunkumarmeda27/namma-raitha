@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { marketItems, cropRates } from '../../data/appData';
+import { apiUrl } from '../../lib/api';
 
 function AIBadge({ fromAI }) {
   return <span className={`ai-badge ${fromAI ? '' : 'mock'}`} style={{ fontSize: '.65rem' }}>🤖 {fromAI ? 'Gemini AI' : 'Smart AI'}</span>;
@@ -37,7 +38,7 @@ export default function FarmerMarket() {
     setShowModal(true);
     try {
       const token = localStorage.getItem('nr_token');
-      const res = await fetch('http://localhost:3001/api/ai/market-insight', {
+      const res = await fetch(apiUrl('/api/ai/market-insight'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ cropName })
