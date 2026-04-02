@@ -7,14 +7,28 @@ const normalizeBaseUrl = (value = '') => {
   return cleaned.replace(/\/+$/, '');
 };
 
-export const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL || '');
+const validateAbsoluteBaseUrl = (value = '') => {
+  const normalized = normalizeBaseUrl(value);
+  if (!normalized) return '';
+  try {
+    const parsed = new URL(normalized);
+    if (/[%\s]/.test(parsed.host)) return '';
+    return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
+  } catch {
+    return '';
+  }
+};
+
+export const API_BASE_URL = validateAbsoluteBaseUrl(import.meta.env.VITE_API_BASE_URL || '');
 export const ML_API_URL = normalizeBaseUrl(import.meta.env.VITE_ML_API_URL || '/ml-api');
 
 export const NGROK_SKIP_HEADER = { 'ngrok-skip-browser-warning': '69420' };
 
 export function apiUrl(path) {
   if (!path) return API_BASE_URL || '/';
-  return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  if (!API_BASE_URL) return normalizedPath;
+  return `${API_BASE_URL}${normalizedPath}`;
 }
 
 export function getHeaders(token = null) {
